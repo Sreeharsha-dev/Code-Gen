@@ -1,10 +1,36 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Code2, Menu } from 'lucide-react';
 import { Button } from './Button';
+import axios from 'axios';
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login state
+
+  useEffect(() => {
+    // Check if user is logged in when the Navbar mounts
+    const checkLoginStatus = async () => {
+      try {
+        await axios.get('http://localhost:3400/api/protected', { withCredentials: true });
+        setIsLoggedIn(true);
+      } catch (error) {
+        setIsLoggedIn(false); // User is not logged in
+      }
+    };
+
+    checkLoginStatus();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await axios.post('http://localhost:3400/api/logout', {}, { withCredentials: true });
+      setIsLoggedIn(false); // Update state to logged out
+      window.location.href = '/auth'; // Redirect to login page
+    } catch (error) {
+      console.error('Logout failed:', error.message);
+    }
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200">
@@ -24,9 +50,17 @@ export function Navbar() {
             <Link to="/editor" className="text-gray-600 hover:text-gray-900 px-3 py-2">
               Editor
             </Link>
-            <Button variant="primary" size="sm">
-              Sign In
-            </Button>
+            {isLoggedIn ? (
+              <Button variant="primary" size="sm" onClick={handleLogout}>
+                Logout
+              </Button>
+            ) : (
+              <Link to="/auth">
+                <Button variant="primary" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center sm:hidden">
@@ -56,9 +90,17 @@ export function Navbar() {
               Editor
             </Link>
             <div className="px-3 py-2">
-              <Button variant="primary" size="sm" className="w-full">
-                Sign In
-              </Button>
+              {isLoggedIn ? (
+                <Button variant="primary" size="sm" className="w-full" onClick={handleLogout}>
+                  Logout
+                </Button>
+              ) : (
+                <Link to="/auth">
+                  <Button variant="primary" size="sm" className="w-full">
+                    Sign In
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

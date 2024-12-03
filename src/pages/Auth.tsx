@@ -1,19 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Github } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { Button } from '../components/Button';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
+axios.defaults.withCredentials = true; // Allow cookies to be sent with requests
 
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Track authentication status
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implement authentication logic
-    console.log('Auth submitted:', { email, password });
+  useEffect(() => {
+    // Check if the user is already logged in
+    const checkAuthStatus = async () => {
+      try {
+        await axios.get('http://localhost:3400/api/protected', { withCredentials: true });
+        setIsAuthenticated(true);
+      } catch (error) {
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  const handleLogin = async (userData) => {
+    try {
+      const response = await axios.post(
+        'http://localhost:3400/api/login',
+        userData,
+        { withCredentials: true } // Ensure cookies are included
+      );
+      console.log(response.data.message);
+      navigate('/'); // Redirect to homepage after login
+    } catch (error) {
+      console.error('Login failed:', error.response?.data?.message || error.message);
+    }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const userData = { email, password };
+
+    try {
+      if (isLogin) {
+        await handleLogin(userData);
+      } else {
+        const response = await axios.post('http://localhost:3400/api/register', userData);
+        console.log(response.data.message); // Handle register response
+        setIsLogin(true); // Switch to login mode after successful registration
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
@@ -70,36 +115,9 @@ export function AuthPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                Remember me
-              </label>
-            </div>
-
-            {isLogin && (
-              <div className="text-sm">
-                <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
-                  Forgot your password?
-                </a>
-              </div>
-            )}
-          </div>
-
           <div className="space-y-4">
             <Button type="submit" className="w-full">
               {isLogin ? 'Sign in' : 'Sign up'}
-            </Button>
-            
-            <Button type="button" variant="outline" className="w-full">
-              <Github className="h-5 w-5 mr-2" />
-              Continue with GitHub
             </Button>
           </div>
 
